@@ -5,7 +5,7 @@ import { normalizeDomain, Verification, VerificationState, verify } from './doma
 type RequestState =
   | { status: 'idle' }
   | { status: 'loading'; domain: string }
-  | { status: 'done'; result?: Verification, error?: Error };
+  | { status: 'done'; result: Verification | Error };
 
 const DOMAIN_QUERY_PARAM = 'domain';
 
@@ -25,21 +25,23 @@ function syncDomainQueryParam(value: string): void {
 }
 
 function ResultIcon({ state }: { state: VerificationState }) {
-  if (state === 'success') {
+  if (state === 'marked') {
     return <CheckCircle2 aria-hidden="true" className="status-icon status-icon-success" />;
   }
-  if (state === 'info') {
+  if (state === 'no-emblem') {
     return <Info aria-hidden="true" className="status-icon status-icon-info" />;
   }
-  if (state === 'warning') {
+  if (state === 'marked-with-errors') {
     return <CircleAlert aria-hidden="true" className="status-icon status-icon-warning" />;
   }
   return <CircleAlert aria-hidden="true" className="status-icon status-icon-danger" />;
 }
 
-function ResultView({ result, error }: { result?: Verification, error?: Error }) {
+function ResultView({ result }: { result: Verification | Error }) {
   let detailRows: string[][] = [];
-  if (result !== undefined) {
+  const verificationState = result instanceof Verification ? result.state() : 'errors';
+  const emblemFound = result instanceof Verification && verificationState !== 'no-emblem';
+  if (result instanceof Verification && emblemFound) {
     const tokens = result.tokens.length;
     const keys = result.keys.length;
     detailRows = useMemo(
@@ -51,18 +53,17 @@ function ResultView({ result, error }: { result?: Verification, error?: Error })
     );
   }
 
-  const verificationState = result !== undefined ? result.state() : 'error';
   return (
     <section className={`result result-${verificationState}`} aria-live="polite">
       <div className="result-heading">
         <ResultIcon state={verificationState} />
         <div>
-          <h2>{result !== undefined ? result.summary() : 'Could not start verification'}</h2>
+          <h2>{result instanceof Verification ? result.summary() : 'Could not start verification'}</h2>
         </div>
       </div>
-      <p className="message">{result !== undefined ? result.message() : error?.message}</p>
+      <p className="message">{result instanceof Verification ? result.message() : result.message}</p>
 
-      {result !== undefined && result.result.protected.length > 0 && (
+      {emblemFound && result.result.protected.length > 0 && (
         <div className="result-section">
           <p className="section-label">Marked assets</p>
             <div className="asset-list">
@@ -73,14 +74,14 @@ function ResultView({ result, error }: { result?: Verification, error?: Error })
         </div>
       )}
 
-      {result !== undefined && result.result.issuer !== undefined && (
+      {emblemFound && result.result.issuer !== undefined && (
         <div className="result-section">
           <p className="section-label">Issuer</p>
           <p className="section-value">{result.result.issuer}</p>
         </div>
       )}
 
-      {result !== undefined && result.result.endorsedBy.length > 0 && (
+      {emblemFound && result.result.endorsedBy.length > 0 && (
         <div className="result-section">
           <p className="section-label">Endorsed by</p>
           <ul className="endorsement-list">
@@ -91,7 +92,7 @@ function ResultView({ result, error }: { result?: Verification, error?: Error })
         </div>
       )}
 
-      {result !== undefined && result.result.errors.length > 0 && (
+      {emblemFound && result.result.errors.length > 0 && (
         <details className="errors">
           <summary>Errors</summary>
           <ul>
@@ -128,11 +129,11 @@ function App() {
     setRequest({ status: 'loading', domain: value });
     const submitted = normalizeDomain(value);
     if (submitted === undefined) {
-      setRequest({ status: 'done', error: new Error('Please enter a valid domain name.') });
+      setRequest({ status: 'done', result: new Error('Please enter a valid domain name.') });
     } else {
       verify(submitted)
         .then((result) => setRequest({ status: 'done', result }))
-        .catch((reason) => setRequest({ status: 'done', error: new Error(reason) }))
+        .catch((reason) => setRequest({ status: 'done', result: new Error(reason) }))
     }
   }
 
@@ -161,7 +162,7 @@ function App() {
     <main className="app-shell">
       <section className="verifier-panel" aria-labelledby="page-title">
         <div className="brand-row">
-          <h1 id="page-title">ADEM verifier</h1>
+          <h1 id="page-title">ADEM Verifier</h1>
         </div>
 
         <form className="search-form" onSubmit={onSubmit}>

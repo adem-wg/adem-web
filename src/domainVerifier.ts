@@ -11,10 +11,10 @@ import { JWK } from 'jose';
 import { parseDomain, ParseResultType } from 'parse-domain';
 
 export type VerificationState =
-  | 'info'
-  | 'success'
-  | 'warning'
-  | 'error';
+  | 'no-emblem'
+  | 'marked'
+  | 'marked-with-errors'
+  | 'errors';
 
 const CT_DISABLED_VERIFY_OPTIONS: VerifyOptions = {
   ctVerifier: async () => undefined,
@@ -36,38 +36,38 @@ export class Verification {
 
   constructor(domain: string, tokens: string[], keys: JWK[], result: VerificationResults) {
     this.domain = domain;
-    this.tokens = [];
-    this.keys = [];
+    this.tokens = tokens;
+    this.keys = keys;
     this.result = result;
   }
 
   state(): VerificationState {
     if (this.tokens.length + this.keys.length === 0) {
-      return 'info';
+      return 'no-emblem';
     } else if (this.result.results.includes(VerificationResult.INVALID)) {
-      return 'error';
+      return 'errors';
     } else if (this.result.errors.length > 0) {
-      return 'warning';
+      return 'marked-with-errors';
     } else {
-      return 'success';
+      return 'marked';
     }
   }
 
   summary(): string {
     switch (this.state()) {
-      case 'info': return 'No emblem';
-      case 'error': return 'Invalid emblem';
-      case 'warning': return 'Marked with ADEM';
-      case 'success': return 'Marked with ADEM';
+      case 'no-emblem': return 'No emblem';
+      case 'errors': return 'Invalid emblem';
+      case 'marked-with-errors': return 'Marked with ADEM';
+      case 'marked': return 'Marked with ADEM';
     }
   }
 
   message(): string {
     switch (this.state()) {
-      case 'info': return 'No emblem was found.';
-      case 'error': return 'Emblem verification failed.';
-      case 'warning': return 'The domain is marked with ADEM, but there were non-critical errors during verification';
-      case 'success': return 'The domain is marked with ADEM, and no errors occurred during verification.';
+      case 'no-emblem': return 'No emblem was found.';
+      case 'errors': return 'Emblem verification failed.';
+      case 'marked-with-errors': return 'The domain is marked with ADEM, but there were non-critical errors during verification';
+      case 'marked': return 'The domain is marked with ADEM, and no errors occurred during verification.';
     }
   }
 }
