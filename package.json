@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "adem-chrome": "github:adem-wg/adem-chrome#develop",
+    "adem-js": "github:adem-wg/adem-js",
     "lucide-react": "^0.468.0",
     "parse-domain": "^8.3.1",
     "react": "^18.2.0",

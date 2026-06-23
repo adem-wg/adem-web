@@ -2,11 +2,11 @@ import {
   fetchDnsTokens,
   VerificationResult,
   verifyTokens,
-} from 'adem-chrome';
+} from 'adem-js';
 import type {
   VerificationResults,
   VerifyOptions,
-} from 'adem-chrome';
+} from 'adem-js';
 import { JWK } from 'jose';
 import { parseDomain, ParseResultType } from 'parse-domain';
 
