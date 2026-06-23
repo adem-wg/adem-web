@@ -173,7 +173,7 @@ function App() {
               name="domain"
               autoComplete="url"
               inputMode="url"
-              placeholder="emblem.example.org"
+              placeholder="example.com"
               value={domain}
               onChange={onDomainChange}
               disabled={request.status === 'loading'}
