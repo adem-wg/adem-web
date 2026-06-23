@@ -1,5 +1,5 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, CircleAlert, HelpCircle, Search, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, CircleAlert, HelpCircle, Info, Search, ShieldCheck } from 'lucide-react';
 import { verifyDomain, type DomainVerification } from './domainVerifier';
 
 type RequestState =
@@ -27,6 +27,9 @@ function syncDomainQueryParam(value: string): void {
 function ResultIcon({ result }: { result: DomainVerification }) {
   if (result.state === 'verified') {
     return <CheckCircle2 aria-hidden="true" className="status-icon status-icon-success" />;
+  }
+  if (result.state === 'unmarked') {
+    return <Info aria-hidden="true" className="status-icon status-icon-info" />;
   }
   if (result.state === 'not_verified' || result.state === 'invalid_input') {
     return <CircleAlert aria-hidden="true" className="status-icon status-icon-danger" />;

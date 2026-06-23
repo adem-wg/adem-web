@@ -13,6 +13,7 @@
   --panel: #ffffff;
   --accent: #d3212d;
   --success: #167a4a;
+  --info: #496b9f;
   --warning: #a16107;
   --danger: #b42318;
 }
@@ -187,6 +188,10 @@ h2 {
 
 .status-icon-danger {
   color: var(--danger);
+}
+
+.status-icon-info {
+  color: var(--info);
 }
 
 .status-icon-warning {

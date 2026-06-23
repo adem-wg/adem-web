@@ -1,13 +1,17 @@
 import {
-  ClaimSet,
   fetchDnsTokens,
-  KeyStore,
-  NewClaim,
+  VerificationResult,
+  verifyTokens,
 } from 'adem-chrome';
-import type { DNSMaterial, VerifyOptions } from 'adem-chrome';
+import type {
+  DNSMaterial,
+  VerificationResults,
+  VerifyOptions,
+} from 'adem-chrome';
 
 export type VerificationState =
   | 'verified'
+  | 'unmarked'
   | 'not_verified'
   | 'inconclusive'
   | 'invalid_input';
@@ -53,19 +57,9 @@ interface InvalidDomain {
 
 type DomainInput = NormalizedDomain | InvalidDomain;
 
-type ClaimWithShape = Awaited<ReturnType<typeof NewClaim>>;
-type KeyInput = Parameters<KeyStore['add']>[0];
-
 const CT_DISABLED_VERIFY_OPTIONS: VerifyOptions = {
   ctVerifier: async () => undefined,
 };
-
-interface VerifiedClaimSet {
-  emblem: ClaimWithShape;
-  internals: ClaimWithShape[];
-  externals: ClaimWithShape[];
-  emblemIssuer: string;
-}
 
 function emptyResult(overrides: Partial<DomainVerification>): DomainVerification {
   return {
@@ -117,15 +111,6 @@ export function normalizeDomain(input: string): DomainInput {
   return { ok: true, domain };
 }
 
-function parseKey(raw: string): KeyInput | undefined {
-  try {
-    const key = JSON.parse(raw) as KeyInput;
-    return typeof key.kty === 'string' ? key : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 export function classifyVerificationError(error: unknown): {
   stage: FailureStage;
   state: VerificationState;
@@ -135,6 +120,22 @@ export function classifyVerificationError(error: unknown): {
 } {
   const diagnostic = error instanceof Error ? error.message : String(error);
   const lower = diagnostic.toLowerCase();
+
+  if (
+    lower.includes('could not parse token') ||
+    lower.includes('token set must contain exactly one emblem') ||
+    lower.includes('headers miss') ||
+    lower.includes('headers contain wrong cty') ||
+    lower.includes('iat/nbf/exp undefined')
+  ) {
+    return {
+      stage: 'material',
+      state: 'not_verified',
+      title: 'No verified ADEM marking',
+      message: 'The published ADEM token material is malformed or incomplete.',
+      diagnostic,
+    };
+  }
 
   if (
     lower.includes('failed to fetch') ||
@@ -159,7 +160,8 @@ export function classifyVerificationError(error: unknown): {
     lower.includes('jws') ||
     lower.includes('jwt') ||
     lower.includes('no verification key') ||
-    lower.includes('no key with kid')
+    lower.includes('no key with kid') ||
+    lower.includes('could not authenticate key')
   ) {
     return {
       stage: 'signature',
@@ -189,61 +191,43 @@ export function classifyVerificationError(error: unknown): {
   };
 }
 
-async function buildKeyStore(material: DNSMaterial): Promise<KeyStore> {
-  const keys = new KeyStore();
-  for (const key of material.keys) {
-    keys.put(await keys.add(key));
-  }
-  return keys;
-}
-
 export async function verifyMaterial(
   material: DNSMaterial,
   options: VerifyOptions = {},
-): Promise<VerifiedClaimSet> {
-  const keys = await buildKeyStore(material);
-  const tokens: string[] = [];
-
-  for (const raw of material.tokens) {
-    const key = parseKey(raw);
-    if (key === undefined) {
-      tokens.push(raw);
-    } else {
-      keys.put(await keys.add(key));
-    }
-  }
-
-  const claims = await Promise.all(tokens.map((token) => NewClaim(token, keys)));
-  const emblems = claims.filter((claim) => claim.headers.cty === 'adem-emb');
-  if (emblems.length !== 1) {
-    throw new Error('token set must contain exactly one emblem');
-  }
-
-  const claimSet = new ClaimSet(
-    emblems[0],
-    claims.filter((claim) => claim.headers.cty === 'adem-end'),
-  ) as VerifiedClaimSet & { verify: (keys: KeyStore, options: VerifyOptions) => Promise<unknown> };
-
-  await claimSet.verify(keys, { ...options, ...CT_DISABLED_VERIFY_OPTIONS });
-  return claimSet;
+): Promise<VerificationResults> {
+  return verifyTokens(
+    [
+      ...material.tokens,
+      ...material.keys.map((key) => JSON.stringify(key)),
+    ],
+    [],
+    { ...options, ...CT_DISABLED_VERIFY_OPTIONS },
+  );
 }
 
-function verifiedResult(domain: string, material: DNSMaterial, set: VerifiedClaimSet): DomainVerification {
+function verifiedResult(
+  domain: string,
+  material: DNSMaterial,
+  result: VerificationResults,
+): DomainVerification {
   return {
     state: 'verified',
     domain,
     title: 'Verified ADEM marking',
     message: 'This domain has a verified ADEM marking.',
-    issuer: set.emblemIssuer,
-    protectedAssets: set.emblem.payload.assets || [],
-    endorsedBy: set.externals.map((claim) => claim.payload.iss),
+    issuer: result.issuer,
+    protectedAssets: result.protected,
+    endorsedBy: result.endorsedBy,
     tokenCount: material.tokens.length,
     keyCount: material.keys.length,
     verification: {
-      signed: true,
-      organizational: Boolean(set.internals[0]?.isRoot),
-      endorsed: set.externals.length > 0,
+      signed: result.results.includes(VerificationResult.SIGNED),
+      organizational: result.results.includes(VerificationResult.ORGANIZATIONAL),
+      endorsed: result.results.includes(VerificationResult.ENDORSED),
     },
+    diagnostic: result.errors.length > 0
+      ? result.errors.map((error) => error.message).join('\n')
+      : undefined,
   };
 }
 
@@ -273,19 +257,36 @@ export async function verifyDomain(input: string): Promise<DomainVerification> {
 
   if (material.tokens.length === 0) {
     return emptyResult({
-      state: 'not_verified',
+      state: 'unmarked',
       domain: normalized.domain,
       stage: 'records',
-      title: 'No verified ADEM marking',
-      message: 'No ADEM token records were found for this domain.',
+      title: 'No emblem',
+      message: 'The domain is not marked with ADEM.',
       tokenCount: material.tokens.length,
       keyCount: material.keys.length,
     });
   }
 
   try {
-    const set = await verifyMaterial(material);
-    return verifiedResult(normalized.domain, material, set);
+    const result = await verifyMaterial(material);
+    if (result.results.includes(VerificationResult.SIGNED)) {
+      return verifiedResult(normalized.domain, material, result);
+    }
+
+    const errors = result.errors.length > 0
+      ? new Error(result.errors.map((error) => error.message).join('\n'))
+      : new Error('token set could not be verified');
+    const classified = classifyVerificationError(errors);
+    return emptyResult({
+      state: classified.state,
+      domain: normalized.domain,
+      stage: classified.stage,
+      title: classified.title,
+      message: classified.message,
+      tokenCount: material.tokens.length,
+      keyCount: material.keys.length,
+      diagnostic: classified.diagnostic,
+    });
   } catch (error) {
     const classified = classifyVerificationError(error);
     return emptyResult({
