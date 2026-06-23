@@ -1,11 +1,11 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, CircleAlert, Info, Search, ShieldCheck } from 'lucide-react';
-import { verifyDomain, type DomainVerification } from './domainVerifier';
+import { normalizeDomain, Verification, VerificationState, verify } from './domainVerifier';
 
 type RequestState =
   | { status: 'idle' }
   | { status: 'loading'; domain: string }
-  | { status: 'done'; result: DomainVerification };
+  | { status: 'done'; result?: Verification, error?: Error };
 
 const DOMAIN_QUERY_PARAM = 'domain';
 
@@ -24,80 +24,97 @@ function syncDomainQueryParam(value: string): void {
   window.history.replaceState({}, '', url);
 }
 
-function ResultIcon({ result }: { result: DomainVerification }) {
-  if (result.state === 'success') {
+function ResultIcon({ state }: { state: VerificationState }) {
+  if (state === 'success') {
     return <CheckCircle2 aria-hidden="true" className="status-icon status-icon-success" />;
   }
-  if (result.state === 'info') {
+  if (state === 'info') {
     return <Info aria-hidden="true" className="status-icon status-icon-info" />;
   }
-  if (result.state === 'warning') {
+  if (state === 'warning') {
     return <CircleAlert aria-hidden="true" className="status-icon status-icon-warning" />;
   }
   return <CircleAlert aria-hidden="true" className="status-icon status-icon-danger" />;
 }
 
-function ResultView({ result }: { result: DomainVerification }) {
-  const detailRows = useMemo(
-    () => [
-      ['Verification', [
-        result.verification.signed ? 'Signed' : undefined,
-        result.verification.organizational ? 'Organizational' : undefined,
-        result.verification.endorsed ? 'Endorsed' : undefined,
-      ].filter(Boolean).join(', ') || 'Not verified'],
-      ['Issuer', result.issuer || 'Not available'],
-      ['Marked assets', result.protectedAssets.length.toString()],
-      ['Endorsements', result.endorsedBy.length.toString()],
-      ['DNS material', `${result.tokenCount} token${result.tokenCount === 1 ? '' : 's'}, ${result.keyCount} key${result.keyCount === 1 ? '' : 's'}`],
-      ['Failure stage', result.stage || 'None'],
-    ],
-    [result],
-  );
+function ResultView({ result, error }: { result?: Verification, error?: Error }) {
+  let detailRows: string[][] = [];
+  if (result !== undefined) {
+    const tokens = result.tokens.length;
+    const keys = result.keys.length;
+    detailRows = useMemo(
+      () => [
+        ['Verification', result.result.results.join(', ')],
+        ['DNS material', `${tokens} token${tokens === 1 ? '' : 's'}, ${keys} key${keys === 1 ? '' : 's'}`],
+      ],
+      [result],
+    );
+  }
 
+  const verificationState = result !== undefined ? result.state() : 'error';
   return (
-    <section className={`result result-${result.state}`} aria-live="polite">
+    <section className={`result result-${verificationState}`} aria-live="polite">
       <div className="result-heading">
-        <ResultIcon result={result} />
+        <ResultIcon state={verificationState} />
         <div>
-          <p className="eyebrow">{result.domain || 'ADEM'}</p>
-          <h2>{result.title}</h2>
+          <h2>{result !== undefined ? result.summary() : 'Could not start verification'}</h2>
         </div>
       </div>
-      <p className="message">{result.message}</p>
+      <p className="message">{result !== undefined ? result.message() : error?.message}</p>
 
-      {result.protectedAssets.length > 0 && (
-        <div className="asset-list" aria-label="Marked assets">
-          {result.protectedAssets.map((asset) => (
-            <span className="asset" key={asset}>{asset}</span>
-          ))}
+      {result !== undefined && result.result.protected.length > 0 && (
+        <div className="result-section">
+          <p className="section-label">Marked assets</p>
+            <div className="asset-list">
+              {result.result.protected.map((asset) => (
+                <span className="asset" key={asset}>{asset}</span>
+              ))}
+            </div>
         </div>
       )}
 
-      {result.endorsedBy.length > 0 && (
-        <div className="endorsements">
+      {result !== undefined && result.result.issuer !== undefined && (
+        <div className="result-section">
+          <p className="section-label">Issuer</p>
+          <p className="section-value">{result.result.issuer}</p>
+        </div>
+      )}
+
+      {result !== undefined && result.result.endorsedBy.length > 0 && (
+        <div className="result-section">
           <p className="section-label">Endorsed by</p>
-          <ul>
-            {result.endorsedBy.map((issuer) => (
+          <ul className="endorsement-list">
+            {result.result.endorsedBy.map((issuer) => (
               <li key={issuer}>{issuer}</li>
             ))}
           </ul>
         </div>
       )}
 
-      <details className="details">
-        <summary>Details</summary>
-        <dl>
-          {detailRows.map(([label, value]) => (
-            <div key={label}>
-              <dt>{label}</dt>
-              <dd>{value}</dd>
-            </div>
-          ))}
-        </dl>
-        {result.diagnostic && (
-          <p className="diagnostic">{result.diagnostic}</p>
-        )}
-      </details>
+      {result !== undefined && result.result.errors.length > 0 && (
+        <details className="errors">
+          <summary>Errors</summary>
+          <ul>
+            {result.result.errors.map((error, index) => (
+              <li key={`${index}-${error}`}>{error.message}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      {detailRows.length > 0 && (
+          <details className="details">
+            <summary>Details</summary>
+            <dl>
+              {detailRows.map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </details>
+      )}
     </section>
   );
 }
@@ -108,10 +125,15 @@ function App() {
   const shouldVerifyInitialDomain = useRef(domain.trim().length > 0);
 
   async function runVerification(value: string) {
-    const submitted = value.trim();
-    setRequest({ status: 'loading', domain: submitted });
-    const result = await verifyDomain(submitted);
-    setRequest({ status: 'done', result });
+    setRequest({ status: 'loading', domain: value });
+    const submitted = normalizeDomain(value);
+    if (submitted === undefined) {
+      setRequest({ status: 'done', error: new Error('Please enter a valid domain name.') });
+    } else {
+      verify(submitted)
+        .then((result) => setRequest({ status: 'done', result }))
+        .catch((reason) => setRequest({ status: 'done', error: new Error(reason) }))
+    }
   }
 
   useEffect(() => {
@@ -139,7 +161,6 @@ function App() {
     <main className="app-shell">
       <section className="verifier-panel" aria-labelledby="page-title">
         <div className="brand-row">
-          <ShieldCheck aria-hidden="true" className="brand-icon" />
           <h1 id="page-title">ADEM verifier</h1>
         </div>
 

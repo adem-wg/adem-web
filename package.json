@@ -11,6 +11,7 @@
   "dependencies": {
     "adem-chrome": "github:adem-wg/adem-chrome#develop",
     "lucide-react": "^0.468.0",
+    "parse-domain": "^8.3.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

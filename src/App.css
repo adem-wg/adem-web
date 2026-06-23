@@ -212,11 +212,15 @@ h2 {
   line-height: 1.55;
 }
 
+.result-section {
+  margin-top: 22px;
+}
+
 .asset-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 8px;
 }
 
 .asset {
@@ -229,28 +233,54 @@ h2 {
   overflow-wrap: anywhere;
 }
 
-.endorsements {
-  margin-top: 22px;
+.section-value,
+.section-empty {
+  margin-top: 6px;
+  color: #3e4655;
+  overflow-wrap: anywhere;
 }
 
-.endorsements ul {
+.section-empty {
+  color: var(--muted);
+}
+
+.endorsement-list {
   margin: 8px 0 0;
   padding-left: 20px;
   color: #3e4655;
   overflow-wrap: anywhere;
 }
 
+.errors,
 .details {
   margin-top: 22px;
   border-top: 1px solid var(--border);
   padding-top: 16px;
 }
 
+.errors summary,
 .details summary {
   width: max-content;
   color: var(--ink);
   font-weight: 760;
   cursor: pointer;
+}
+
+.errors ul {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  color: var(--danger);
+}
+
+.errors li {
+  margin-top: 6px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.errors p {
+  margin-top: 12px;
+  color: var(--muted);
 }
 
 .details dl {
@@ -277,15 +307,6 @@ h2 {
 .details dd {
   margin: 4px 0 0;
   color: var(--ink);
-  overflow-wrap: anywhere;
-}
-
-.diagnostic {
-  margin-top: 14px;
-  padding: 12px;
-  border-radius: 8px;
-  color: #5f3611;
-  background: #fff5e6;
   overflow-wrap: anywhere;
 }
 
