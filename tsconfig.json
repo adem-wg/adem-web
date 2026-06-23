@@ -13,7 +13,7 @@
     "moduleResolution": "Bundler",
     "baseUrl": ".",
     "paths": {
-      "adem-chrome": ["./node_modules/adem-chrome/lib/index.ts"]
+      "adem-chrome": ["../adem-chrome/lib/index.ts"]
     },
     "resolveJsonModule": true,
     "isolatedModules": false,
