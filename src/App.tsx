@@ -162,7 +162,7 @@ function App() {
     <main className="app-shell">
       <section className="verifier-panel" aria-labelledby="page-title">
         <div className="brand-row">
-          <h1 id="page-title">ADEM Verifier</h1>
+          <h1 id="page-title">ADEM Verification Tool</h1>
         </div>
 
         <form className="search-form" onSubmit={onSubmit}>
