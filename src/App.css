@@ -50,9 +50,9 @@ input {
 }
 
 .brand-icon {
-  width: 34px;
-  height: 34px;
-  color: var(--accent);
+  width: clamp(40px, 8vw, 58px);
+  height: clamp(40px, 8vw, 58px);
+  flex: 0 0 auto;
 }
 
 h1,

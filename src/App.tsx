@@ -1,5 +1,5 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, CircleAlert, Info, Search, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, CircleAlert, Info, Search } from 'lucide-react';
 import { normalizeDomain, Verification, VerificationState, verify } from './domainVerifier';
 
 type RequestState =
@@ -162,6 +162,7 @@ function App() {
     <main className="app-shell">
       <section className="verifier-panel" aria-labelledby="page-title">
         <div className="brand-row">
+          <img className="brand-icon" src="/images/emblem.svg" alt="" aria-hidden="true" />
           <h1 id="page-title">ADEM Verification Tool</h1>
         </div>
 
