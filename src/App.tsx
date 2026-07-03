@@ -201,6 +201,13 @@ function App() {
 
         {request.status === 'done' && <ResultView result={request.result} />}
       </section>
+      <footer className="page-footer">
+        <p>
+          This tool verifies whether a domain name is marked with ADEM, but note
+          that it currently does not verify root key commitments using
+          certificate transparency.
+        </p>
+      </footer>
     </main>
   );
 }

@@ -42,6 +42,14 @@ input {
   margin: 0 auto;
 }
 
+.page-footer {
+  width: min(840px, 100%);
+  margin: 24px auto 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
 .brand-row {
   display: flex;
   align-items: center;
@@ -323,6 +331,10 @@ h2 {
 
   .brand-row {
     margin-bottom: 22px;
+  }
+
+  .page-footer {
+    margin-top: 18px;
   }
 
   .search-row {
