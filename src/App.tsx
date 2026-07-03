@@ -8,6 +8,7 @@ type RequestState =
   | { status: 'done'; result: Verification | Error };
 
 const DOMAIN_QUERY_PARAM = 'domain';
+const EMBLEM_URL = `${import.meta.env.BASE_URL}images/emblem.svg`;
 
 function getInitialDomain(): string {
   return new URLSearchParams(window.location.search).get(DOMAIN_QUERY_PARAM) || '';
@@ -162,7 +163,7 @@ function App() {
     <main className="app-shell">
       <section className="verifier-panel" aria-labelledby="page-title">
         <div className="brand-row">
-          <img className="brand-icon" src="/images/emblem.svg" alt="" aria-hidden="true" />
+          <img className="brand-icon" src={EMBLEM_URL} alt="" aria-hidden="true" />
           <h1 id="page-title">ADEM Verification Tool</h1>
         </div>
 
