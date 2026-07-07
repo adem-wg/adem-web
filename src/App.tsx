@@ -9,6 +9,16 @@ type RequestState =
 
 const DOMAIN_QUERY_PARAM = 'domain';
 const EMBLEM_URL = `${import.meta.env.BASE_URL}images/emblem.svg`;
+const EXAMPLE_DOMAINS = [
+  {
+    domain: 'adem.redcross.org.uk',
+    note: 'configured by the British Red Cross',
+  },
+  {
+    domain: 'cyberstar.online',
+    note: 'configured by the Australian Red Cross',
+  },
+];
 
 function getInitialDomain(): string {
   return new URLSearchParams(window.location.search).get(DOMAIN_QUERY_PARAM) || '';
@@ -23,6 +33,12 @@ function syncDomainQueryParam(value: string): void {
     url.searchParams.set(DOMAIN_QUERY_PARAM, trimmed);
   }
   window.history.replaceState({}, '', url);
+}
+
+function createDomainUrl(value: string): string {
+  const url = new URL(window.location.href);
+  url.searchParams.set(DOMAIN_QUERY_PARAM, value);
+  return url.toString();
 }
 
 function ResultIcon({ state }: { state: VerificationState }) {
@@ -187,11 +203,17 @@ function App() {
           </div>
         </form>
 
-        {request.status === 'idle' && (
-          <section className="empty-state" aria-live="polite">
-            <p>No domain checked yet.</p>
-          </section>
-        )}
+        <section className="domain-examples" aria-label="Example domains">
+          {/* <p>Try checking other domains names, for example:</p> */}
+          <div className="domain-example-list">
+            {EXAMPLE_DOMAINS.map((example) => (
+              <a className="domain-example" href={createDomainUrl(example.domain)} key={example.domain}>
+                <span>Try {example.domain}</span>
+                <small>{example.note}</small>
+              </a>
+            ))}
+          </div>
+        </section>
 
         {request.status === 'loading' && (
           <section className="loading-state" aria-live="polite">

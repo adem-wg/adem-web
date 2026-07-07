@@ -142,6 +142,56 @@ h2 {
   opacity: 0.72;
 }
 
+.domain-examples {
+  margin: -4px 0 18px;
+  text-align: center;
+}
+
+.domain-examples p {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.domain-example-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.domain-example {
+  min-width: min(100%, 260px);
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 12px;
+  border: 1px solid #e5e9f0;
+  border-radius: 8px;
+  color: #3e4655;
+  background: transparent;
+  text-decoration: none;
+}
+
+.domain-example:hover,
+.domain-example:focus-visible {
+  border-color: #496b9f;
+  outline: 3px solid rgb(73 107 159 / 14%);
+  outline-offset: 0;
+}
+
+.domain-example span {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.domain-example small {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
 .empty-state,
 .loading-state,
 .result {
