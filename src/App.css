@@ -192,6 +192,11 @@ h2 {
   line-height: 1.35;
 }
 
+.domain-example-expired,
+.domain-example-expired small {
+  color: #9aa1ac;
+}
+
 .empty-state,
 .loading-state,
 .result {

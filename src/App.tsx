@@ -13,10 +13,12 @@ const EXAMPLE_DOMAINS = [
   {
     domain: 'adem.redcross.org.uk',
     note: 'configured by the British Red Cross',
+    expired: true,
   },
   {
     domain: 'cyberstar.online',
     note: 'configured by the Australian Red Cross',
+    expired: false,
   },
 ];
 
@@ -207,8 +209,12 @@ function App() {
           {/* <p>Try checking other domains names, for example:</p> */}
           <div className="domain-example-list">
             {EXAMPLE_DOMAINS.map((example) => (
-              <a className="domain-example" href={createDomainUrl(example.domain)} key={example.domain}>
-                <span>Try {example.domain}</span>
+              <a
+                className={`domain-example${example.expired ? ' domain-example-expired' : ''}`}
+                href={createDomainUrl(example.domain)}
+                key={example.domain}
+              >
+                <span>Try {example.domain}{example.expired ? ' (expired)' : ''}</span>
                 <small>{example.note}</small>
               </a>
             ))}
