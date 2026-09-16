@@ -18,7 +18,7 @@ const EXAMPLE_DOMAINS = [
   {
     domain: 'cyberstar.online',
     note: 'configured by the Australian Red Cross',
-    expired: false,
+    expired: true,
   },
 ];
 
