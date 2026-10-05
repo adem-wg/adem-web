@@ -11,6 +11,10 @@ const DOMAIN_QUERY_PARAM = 'domain';
 const EMBLEM_URL = `${import.meta.env.BASE_URL}images/emblem.svg`;
 const EXAMPLE_DOMAINS = [
   {
+    domain: 'digital-emblem.icrc.org',
+    note: 'configured by the ICRC',
+  },
+  {
     domain: 'adem.redcross.org.uk',
     note: 'configured by the British Red Cross',
     expired: true,
