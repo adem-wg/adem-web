@@ -19,6 +19,10 @@ const EXAMPLE_DOMAINS = [
     note: 'configured by the Belgian Red Cross',
   },
   {
+    domain: 'emblema.cruzroja.bo',
+    note: 'configured by the Bolivian Red Cross',
+  },
+  {
     domain: 'cruzroja.or.cr',
     note: 'configured by the Costa Rican Red Cross',
   },
